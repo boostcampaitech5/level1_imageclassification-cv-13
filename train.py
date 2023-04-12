@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 import numpy as np
 import torch
+import timm
 
 import utils
 import data_utils
@@ -72,29 +73,29 @@ def main(args):
 
     utils.seed_everything(args.seed)
 
-    ########## wandb ##########
-    wandb.init(
-        project="mask-classification",
-        entity="5pencv",
-        name=f"{args.exp_name}",
+    ##################### wandb #######################
+    if not args.wandb_off:
+        wandb.init(
+            project="mask-classification",
+            entity="5pencv",
+            name=f"{args.exp_name}",
 
-        config={
-            "learning_rate": args.lr,
-            "optimizer": args.optimizer,
-            "model": args.model,
-            "loss": "CrossEntropyLoss",
-            "batch_size": args.batch_size,
-            "epochs": args.epochs,
-            "target": args.target,
-        }
-    )
+            config={
+                "learning_rate": args.lr,
+                "optimizer": args.optimizer,
+                "model": args.model,
+                "loss": "CrossEntropyLoss",
+                "batch_size": args.batch_size,
+                "epochs": args.epochs,
+                "target": args.target,
+            }
+        )
+    ##################### ##### #######################
 
-    ######## ######## ########
-
-    transform = data_utils.transform_dict[args.model] if args.model in data_utils.transform_dict.keys() else None
+    # transform = data_utils.transform_dict[args.model] if args.model in data_utils.transform_dict.keys() else None
 
     image_files = data_utils.generate_file_list(args.datadir)
-    dataset = data_utils.MaskDataset(image_files, args.target, group_age=False, train=True, transform=transform)
+    dataset = data_utils.MaskDataset(image_files, args.target, group_age=True, train=True, transform=None)
     train_dataloader, valid_dataloader = data_utils.get_dataloader(dataset,
                                                                    args.batch_size,
                                                                    val_split=args.val_split,
@@ -102,12 +103,14 @@ def main(args):
                                                                    drop_last=True,
                                                                    )
 
-    model_dict = models.init_model_dict()
+    # model_dict = models.init_model_dict()
 
-    if args.model in model_dict.keys():
-        model = getattr(models, model_dict[args.model])(args.n_class)
-    else:
-       raise ValueError(f"'{args.model}' not implemented!")
+    # if args.model in model_dict.keys():
+    #     model = getattr(models, model_dict[args.model])(args.n_class)
+    # else:
+    #    raise ValueError(f"'{args.model}' not implemented!")
+
+    model = timm.create_model('resnet34', pretrained=True, num_classes=args.n_class)
 
     model.to(DEVICE)
 
@@ -157,7 +160,7 @@ def main(args):
         acc_curve.plot_learning_curve(label='valid_acc')
         acc_curve.save_fig(f'./results/{args.exp_name}/acc_curve.png')
 
-        if args.wandb:
+        if not args.wandb_off:
             wandb.log({
                 f"{args.target}_train_loss": metrics['train_loss'],
                 f"{args.target}_train_acc": metrics['train_acc'],
