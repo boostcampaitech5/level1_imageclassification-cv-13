@@ -14,6 +14,8 @@ import utils
 import data_utils
 import models
 
+import wandb
+
 
 def train(model, dataloader, criterion, optimizer, device, epoch):
     loss = utils.AverageMeter()
@@ -70,8 +72,29 @@ def main(args):
 
     utils.seed_everything(args.seed)
 
+    ########## wandb ##########
+    wandb.init(
+        project="mask-classification",
+        entity="5pencv",
+        name=f"{args.exp_name}",
+
+        config={
+            "learning_rate": args.lr,
+            "optimizer": args.optimizer,
+            "model": args.model,
+            "loss": "CrossEntropyLoss",
+            "batch_size": args.batch_size,
+            "epochs": args.epochs,
+            "target": args.target,
+        }
+    )
+
+    ######## ######## ########
+
+    transform = data_utils.transform_dict[args.model] if args.model in data_utils.transform_dict.keys() else None
+
     image_files = data_utils.generate_file_list(args.datadir)
-    dataset = data_utils.MaskDataset(image_files, args.target, group_age=False)
+    dataset = data_utils.MaskDataset(image_files, args.target, group_age=False, train=True, transform=transform)
     train_dataloader, valid_dataloader = data_utils.get_dataloader(dataset,
                                                                    args.batch_size,
                                                                    val_split=args.val_split,
@@ -87,8 +110,9 @@ def main(args):
        raise ValueError(f"'{args.model}' not implemented!")
 
     model.to(DEVICE)
-    
+
     criterion = torch.nn.CrossEntropyLoss()
+
     optimizer = __import__('torch.optim', fromlist='optim').__dict__[args.optimizer](
         model.parameters(), lr=args.lr
     )
@@ -133,6 +157,15 @@ def main(args):
         acc_curve.plot_learning_curve(label='valid_acc')
         acc_curve.save_fig(f'./results/{args.exp_name}/acc_curve.png')
 
+        if args.wandb:
+            wandb.log({
+                f"{args.target}_train_loss": metrics['train_loss'],
+                f"{args.target}_train_acc": metrics['train_acc'],
+                f"{args.target}_valid_acc": metrics['valid_acc'],
+                f"{args.target}_valid_loss": metrics['valid_loss'],
+                })
+            # wandb.log({"valid_acc": metrics['valid_acc'], 'valid_loss': metrics['valid_loss']})
+
         if scheduler:
             scheduler.step()
     
@@ -148,7 +181,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
 
     # experiment and log settings
-    parser.add_argument('--neptune', action='store_true', help='Log results in Neptune')
+    parser.add_argument('--wandb_off', action='store_true', help='Do not log results in wandb')
     parser.add_argument('--save_ckpt', action='store_true', help="Save checkpoint at the end of every epoch.")
     parser.add_argument('--exp_name', type=str, required=True, help="Experiment name")
 
@@ -159,8 +192,8 @@ if __name__ == "__main__":
 
     # model configs
     parser.add_argument('--model', type=str, help='Name of the model to train.')
-    parser.add_argument('--n_class', type=int, help="The number of classes.")
-    parser.add_argument('--target', type=str, default='all', choices=['all', 'age', 'gender', 'mask'], help='Target label to predict.' )
+    parser.add_argument('--n_class', type=int, default=18, help="The number of classes.")
+    parser.add_argument('--target', type=str, default='all', choices=['all', 'age', 'gender', 'mask'], help='Target label to predict.')
 
     # hyper-parameters
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size.')
