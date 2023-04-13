@@ -63,8 +63,7 @@ class MaskDataset(Dataset):
             return 2
 
     def _mask_to_cls(self, mask):
-        # mask_types = {'incorrect_mask': 0, 'mask1': 1, 'mask2': 2,
-        #               'mask3': 3, 'mask4': 4, 'mask5': 5, 'normal': 6}
+        
         mask_types = {'incorrect_mask': 0, 'mask1': 1, 'mask2': 1,
                       'mask3': 1, 'mask4': 1, 'mask5': 1, 'normal': 2}
         
