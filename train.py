@@ -17,6 +17,7 @@ import models
 
 import wandb
 
+from loss_func import FocalLoss
 
 def train(model, dataloader, criterion, optimizer, device, epoch):
     loss = utils.AverageMeter()
@@ -79,6 +80,7 @@ def main(args):
             project="mask-classification",
             entity="5pencv",
             name=f"{args.exp_name}",
+            save_code=True,
 
             config={
                 "learning_rate": args.lr,
@@ -88,11 +90,12 @@ def main(args):
                 "batch_size": args.batch_size,
                 "epochs": args.epochs,
                 "target": args.target,
+
             }
         )
     ##################### ##### #######################
 
-    # transform = data_utils.transform_dict[args.model] if args.model in data_utils.transform_dict.keys() else None
+    transform = data_utils.transform_dict[args.aug] if args.aug in data_utils.transform_dict.keys() else None
 
     image_files = data_utils.generate_file_list(args.datadir)
     dataset = data_utils.MaskDataset(image_files, args.target, group_age=True, train=True, transform=None)
@@ -103,6 +106,7 @@ def main(args):
                                                                    drop_last=True,
                                                                    )
 
+    ######model######
     # model_dict = models.init_model_dict()
 
     # if args.model in model_dict.keys():
@@ -110,11 +114,17 @@ def main(args):
     # else:
     #    raise ValueError(f"'{args.model}' not implemented!")
 
-    model = timm.create_model('resnet34', pretrained=True, num_classes=args.n_class)
+
+    # model = timm.create_model('resnet34', pretrained=True, num_classes=args.n_class)
+    # model = timm.create_model('efficientnet', pretrained=True, num_classes=args.n_class)
+
+    model = models.init_model(args.model, args.n_class)
 
     model.to(DEVICE)
 
     criterion = torch.nn.CrossEntropyLoss()
+
+    # criterion = FocalLoss()
 
     optimizer = __import__('torch.optim', fromlist='optim').__dict__[args.optimizer](
         model.parameters(), lr=args.lr
@@ -185,13 +195,14 @@ if __name__ == "__main__":
 
     # experiment and log settings
     parser.add_argument('--wandb_off', action='store_true', help='Do not log results in wandb')
-    parser.add_argument('--save_ckpt', action='store_true', help="Save checkpoint at the end of every epoch.")
+    parser.add_argument('--save_ckpt', action='store_false', help="Save checkpoint at the end of every epoch.")
     parser.add_argument('--exp_name', type=str, required=True, help="Experiment name")
 
     # datasets
-    parser.add_argument('--datadir', '--data_dir', type=str, default='../input/data/train/images', help='Data directory.')
+    parser.add_argument('--datadir', '--data_dir', type=str, default='input/data/train/images', help='Data directory.')
     parser.add_argument('--val_split', type=float, default=0.2, help='Validation split ratio. Set zero to use all data for training.')
     parser.add_argument('--shuffle_off', action='store_false', help="Do not shuffle train dataset.")
+    parser.add_argument('--aug', type=str, default='None', help='Data Augmentation.')
 
     # model configs
     parser.add_argument('--model', type=str, help='Name of the model to train.')
@@ -200,7 +211,7 @@ if __name__ == "__main__":
 
     # hyper-parameters
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size.')
-    parser.add_argument('--epochs', type=int, default=100, help='The number of epochs.')
+    parser.add_argument('--epochs', type=int, default=50, help='The number of epochs.')
     parser.add_argument('--lr', type=float, default=1e-3, help="Learning rate.")
     parser.add_argument('--optimizer', type=str, default='Adam', choices=['Adam'], help='Optimizer.')
     parser.add_argument('--scheduler', action='store_true', help='Use CosineAnnealingLR scheduler.')

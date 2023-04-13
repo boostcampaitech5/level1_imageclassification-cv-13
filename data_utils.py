@@ -2,22 +2,22 @@
 data_utils.py
 """
 
+import torch
 import os
 import glob
 import logging
 import numpy as np
 from PIL import Image
-import torch
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.dataset import Subset
 
 
-# transform_dict = {
-#     'resnet_gender': torch.nn.Sequential(
-#                         transforms.Resize(224),
-#                     )
-# }
+transform_dict = {
+    'resnet_gender': torch.nn.Sequential(
+                        transforms.Resize(224),
+                    )
+}
 
 
 def generate_file_list(data_dir):
@@ -37,7 +37,7 @@ def generate_file_list(data_dir):
 
 
 class MaskDataset(Dataset):
-    def __init__(self, image_files, target, group_age=True, train=True, transform=None):
+    def __init__(self, image_files, target, group_age=False, train=True, transform=None):
         self.image_files = image_files
         self.target = target
         self.group_age = group_age
@@ -64,10 +64,8 @@ class MaskDataset(Dataset):
             return 2
 
     def _mask_to_cls(self, mask):
-        # mask_types = {'incorrect_mask': 0, 'mask1': 1, 'mask2': 2,
-        #               'mask3': 3, 'mask4': 4, 'mask5': 5, 'normal': 6}
-        mask_types = {'incorrect_mask': 1, 'mask1': 0, 'mask2': 0,
-                      'mask3': 0, 'mask4': 0, 'mask5': 0, 'normal': 2}
+        mask_types = {'incorrect_mask': 0, 'mask1': 1, 'mask2': 1,
+                      'mask3': 1, 'mask4': 1, 'mask5': 1, 'normal': 2}
         
         return mask_types[mask]
 
@@ -89,14 +87,13 @@ class MaskDataset(Dataset):
             age, gender = int(identity[3]), identity[1]
 
             if self.group_age:
-                age = self._age_to_cls(age)
+                age = self._age_to_cls()
 
             label['age'] = age
             label['gender'] = self._gender_to_cls(gender)
             label['mask'] = self._mask_to_cls(mask)
 
             if self.target == 'all':
-                label = 6 * label['mask'] + 3 * label['gender'] + label['age']
                 return img, label
             else:
                 return img, label[self.target]
