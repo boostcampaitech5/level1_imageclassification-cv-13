@@ -17,7 +17,7 @@ import models
 
 import wandb
 
-from loss_func import FocalLoss
+# from loss_func import FocalLoss
 
 def train(model, dataloader, criterion, optimizer, device, epoch):
     loss = utils.AverageMeter()
@@ -98,7 +98,7 @@ def main(args):
     transform = data_utils.transform_dict[args.aug] if args.aug in data_utils.transform_dict.keys() else None
 
     image_files = data_utils.generate_file_list(args.datadir)
-    dataset = data_utils.MaskDataset(image_files, args.target, group_age=True, train=True, transform=None)
+    dataset = data_utils.MaskDataset(image_files, args.target, group_age=True, train=True, transform=transform)
     train_dataloader, valid_dataloader = data_utils.get_dataloader(dataset,
                                                                    args.batch_size,
                                                                    val_split=args.val_split,
@@ -131,7 +131,7 @@ def main(args):
     )
 
     if args.scheduler:
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLr(optimizer, T_max=args.epochs)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     else:
         scheduler = None
 

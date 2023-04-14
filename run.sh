@@ -1,10 +1,10 @@
 dataname=$1
 n_class=18
 opt_list='Adam'
-lr_list='0.001 0.0005'
-aug_list='None'
-bs_list='32 64'
-model_list='efficientnet'
+lr_list='1e-3'
+aug_list='flip'
+bs_list='64'
+model_list='efficientnet_b0'
 
 
 for model in $model_list
@@ -19,43 +19,42 @@ do
                 do
                     # use scheduler
                     echo "model:$model, bs: $bs, opt: $opt, lr: $lr, aug: $aug, use_sched: True"
-                    exp_name="bs_$bs-opt_$opt-lr_$lr-aug_$aug-use_sched"
+                    exp_name="${model}_CE_${lr}_${bs}_${aug}_scheduler"
                     
                     if [ -d "$exp_name" ]
                     then
                         echo "$exp_name is exist"
                     else
-                        python main.py \
+                        python train.py \
                             --model $model \
                             --exp_name $exp_name \
                             --n_class $n_class \
                             --optimizer $opt \
-                            --aug-name $aug \
+                            --aug $aug \
                             --batch_size $bs \
                             --lr $lr \
                             --scheduler \
                             --epochs 50
                     fi
 
-                    # not use scheduler
-                    echo "model:$model, bs: $bs, opt: $opt, lr: $lr, aug: $aug, use_sched: False"
-                    exp_name="bs_$bs-opt_$opt-lr_$lr-aug_$aug"
+                    # # not use scheduler
+                    # echo "model:$model, bs: $bs, opt: $opt, lr: $lr, aug: $aug, use_sched: False"
+                    # exp_name="${model}_CE_${lr}_${bs}_${aug}"
 
-                    if [ -d "$exp_name" ]
-                    then
-                        echo "$exp_name is exist"
-                    else
-                        python main.py \
-                            --model $model \
-                            --exp_name $exp_name \
-                            --n_class $n_class \
-                            --optimizer $opt \
-                            --aug-name $aug \
-                            --batch_size $bs \
-                            --lr $lr \
-                            --scheduler \
-                            --epochs 50
-                    fi
+                    # if [ -d "$exp_name" ]
+                    # then
+                    #     echo "$exp_name is exist"
+                    # else
+                    #     python train.py \
+                    #         --model $model \
+                    #         --exp_name $exp_name \
+                    #         --n_class $n_class \
+                    #         --optimizer $opt \
+                    #         --aug $aug \
+                    #         --batch_size $bs \
+                    #         --lr $lr \
+                    #         --epochs 50
+                    # fi
                 done
             done
         done
