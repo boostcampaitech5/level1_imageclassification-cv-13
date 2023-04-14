@@ -15,7 +15,10 @@ from torch.utils.data.dataset import Subset
 
 
 transform_dict = {
-    'gaussian_noise': transforms.GaussianBlur((5,9), sigma=(0.1, 5))
+    'gaussian_noise': transforms.GaussianBlur((5,9), sigma=(0.1, 5)),
+    'flip': torch.nn.Sequential(
+                        transforms.RandomHorizontalFlip(p=0.5),
+                    )
 }
 
 
@@ -63,9 +66,8 @@ class MaskDataset(Dataset):
             return 2
 
     def _mask_to_cls(self, mask):
-        
-        mask_types = {'incorrect_mask': 0, 'mask1': 1, 'mask2': 1,
-                      'mask3': 1, 'mask4': 1, 'mask5': 1, 'normal': 2}
+        mask_types = {'incorrect_mask': 1, 'mask1': 0, 'mask2': 0,
+                      'mask3': 0, 'mask4': 0, 'mask5': 0, 'normal': 2}
         
         return mask_types[mask]
 
