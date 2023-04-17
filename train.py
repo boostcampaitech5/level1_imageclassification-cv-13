@@ -17,7 +17,6 @@ import models
 
 import wandb
 
-# from loss_func import FocalLoss
 
 def train(model, dataloader, criterion, optimizer, device, epoch):
     loss = utils.AverageMeter()
@@ -90,23 +89,32 @@ def main(args):
                 "batch_size": args.batch_size,
                 "epochs": args.epochs,
                 "target": args.target,
-
+                "augmentation": args.aug,
             }
         )
     ##################### ##### #######################
 
-    transform = data_utils.transform_dict[args.aug] if args.aug in data_utils.transform_dict.keys() else None
+    # transform = data_utils.transform_dict[args.aug] if args.aug in data_utils.transform_dict.keys() else None
 
-    image_files = data_utils.generate_file_list(args.datadir)
-    dataset = data_utils.MaskDataset(image_files, args.target, group_age=True, train=True, transform=transform)
-    train_dataloader, valid_dataloader = data_utils.get_dataloader(dataset,
-                                                                   args.batch_size,
-                                                                   val_split=args.val_split,
-                                                                   shuffle=args.shuffle_off,
-                                                                   drop_last=True,
-                                                                   )
+    transform = data_utils.init_transform(args.aug, args.p)
 
-    ######model######
+    train_image_files = data_utils.generate_file_list(args.datadir, val_split=args.val_split, train=True)
+    valid_image_files = data_utils.generate_file_list(args.datadir, val_split=args.val_split, train=False)
+    
+    train_dataset = data_utils.MaskDataset(train_image_files, args.target, group_age=True, transform=transform)
+    valid_dataset = data_utils.MaskDataset(valid_image_files, args.target, group_age=True, transform=None)
+    
+    train_dataloader = data_utils.get_dataloader(train_dataset,
+                                                args.batch_size,
+                                                shuffle=args.shuffle_off,
+                                                drop_last=True,
+                                                )
+    valid_dataloader = data_utils.get_dataloader(valid_dataset,
+                                                args.valid_batch_size,
+                                                shuffle=False,
+                                                drop_last=True,
+                                                )
+
     # model_dict = models.init_model_dict()
 
     # if args.model in model_dict.keys():
@@ -114,17 +122,13 @@ def main(args):
     # else:
     #    raise ValueError(f"'{args.model}' not implemented!")
 
-
     # model = timm.create_model('resnet34', pretrained=True, num_classes=args.n_class)
-    # model = timm.create_model('efficientnet', pretrained=True, num_classes=args.n_class)
+    # model = timm.create_model('convnext_small', pretrained=True, num_classes=args.n_class)
 
     model = models.init_model(args.model, args.n_class)
-
     model.to(DEVICE)
 
     criterion = torch.nn.CrossEntropyLoss()
-
-    # criterion = FocalLoss()
 
     optimizer = __import__('torch.optim', fromlist='optim').__dict__[args.optimizer](
         model.parameters(), lr=args.lr
@@ -139,7 +143,13 @@ def main(args):
     loss_curve = utils.CurvePlotter(title=f'{args.exp_name}', xlabel='Epoch', ylabel='Loss', i=1)
     acc_curve = utils.CurvePlotter(title=f'{args.exp_name}', xlabel='Epoch', ylabel='Accuracy', i=2)
 
-    epoch_msg_header = f"{'Epoch':^10} {'Train Loss':^16} {'Train Acc':^15} {'Valid Loss':^16} {'Valid Acc':^15}"
+    epoch_msg_header = (
+        f"{'Epoch':^10}"
+        f"{'Train Loss':^16}"
+        f"{'Train Acc':^15}"
+        f"{'Valid Loss':^16}"
+        f"{'Valid Acc':^15}"
+    )
     _logger.info(epoch_msg_header)
     epoch_msg_header = '\n' + '=' * 75 + '\n' + epoch_msg_header + '\n' + '=' * 75
     print(epoch_msg_header)
@@ -152,9 +162,14 @@ def main(args):
         metrics.update([(f'train_{k}', v) for k, v in train_metrics.items()])
         metrics.update([(f'valid_{k}', v) for k, v in valid_metrics.items()])
 
-        # epoch_msg = f'Epoch {epoch:04d} '+ ', '.join([f'{k}: {v:.6f}' for k, v in metrics.items()])
-        epoch_msg = f"""{f'{epoch:04d}':^10} {f"{metrics['train_loss']:.6f}":^16} {f"{metrics['train_acc']:.4f}":^15} {f"{metrics['valid_loss']:.6f}":^16} {f"{metrics['valid_acc']:.4f}":^15}\
-                    """
+        epoch_msg = (
+            f"""{f'{epoch:04d}':^10}"""
+            f"""{f"{metrics['train_loss']:.6f}":^16}"""
+            f"""{f"{metrics['train_acc']:.4f}":^15}"""
+            f"""{f"{metrics['valid_loss']:.6f}":^16}"""
+            f"""{f"{metrics['valid_acc']:.4f}":^15}"""
+        )
+
         _logger.info(epoch_msg)
         print(epoch_msg)
 
@@ -177,7 +192,6 @@ def main(args):
                 f"{args.target}_valid_acc": metrics['valid_acc'],
                 f"{args.target}_valid_loss": metrics['valid_loss'],
                 })
-            # wandb.log({"valid_acc": metrics['valid_acc'], 'valid_loss': metrics['valid_loss']})
 
         if scheduler:
             scheduler.step()
@@ -202,7 +216,8 @@ if __name__ == "__main__":
     parser.add_argument('--datadir', '--data_dir', type=str, default='input/data/train/images', help='Data directory.')
     parser.add_argument('--val_split', type=float, default=0.2, help='Validation split ratio. Set zero to use all data for training.')
     parser.add_argument('--shuffle_off', action='store_false', help="Do not shuffle train dataset.")
-    parser.add_argument('--aug', type=str, default='None', help='Data Augmentation.')
+    parser.add_argument('--aug', type=str, default='None', help='Data augmentation.')
+    parser.add_argument('--p', type=float, default=1, help='Possibility')
 
     # model configs
     parser.add_argument('--model', type=str, help='Name of the model to train.')
@@ -211,7 +226,8 @@ if __name__ == "__main__":
 
     # hyper-parameters
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size.')
-    parser.add_argument('--epochs', type=int, default=50, help='The number of epochs.')
+    parser.add_argument('--valid_batch_size', type=int, default=100, help='input batch size for validing (default: 100)')
+    parser.add_argument('--epochs', type=int, default=100, help='The number of epochs.')
     parser.add_argument('--lr', type=float, default=1e-3, help="Learning rate.")
     parser.add_argument('--optimizer', type=str, default='Adam', choices=['Adam'], help='Optimizer.')
     parser.add_argument('--scheduler', action='store_true', help='Use CosineAnnealingLR scheduler.')
