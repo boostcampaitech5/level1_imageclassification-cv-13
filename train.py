@@ -100,8 +100,8 @@ def main(args):
 
     # transform = data_utils.transform_dict[args.aug] if args.aug in data_utils.transform_dict.keys() else None
 
-    transform = data_utils.init_transform(args.aug, args.p)  #args.p
-    transform_valid = data_utils.init_transform('norm', args.p)
+    transform = data_utils.init_transform(args.aug, args.p) 
+    transform_valid = data_utils.init_transform('norm', 1)
 
     train_image_files = data_utils.generate_file_list(args.datadir, val_split=args.val_split, train=True, stratify=True)
     valid_image_files = data_utils.generate_file_list(args.datadir, val_split=args.val_split, train=False, stratify=True)
@@ -134,7 +134,7 @@ def main(args):
     valid_dataloader = data_utils.get_dataloader(valid_dataset,
                                                 args.valid_batch_size,
                                                 shuffle=False,
-                                                drop_last=True,
+                                                drop_last=False,
                                                 sampler=None,
                                                 )
 
