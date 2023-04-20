@@ -6,6 +6,7 @@ import os
 from argparse import ArgumentParser
 from collections import OrderedDict
 from tqdm import tqdm
+from torchvision import transforms
 
 import numpy as np
 import torch
@@ -18,6 +19,7 @@ import models
 import wandb
 from torch.utils.data import WeightedRandomSampler
 from collections import Counter
+import loss
 
 def train(model, dataloader, criterion, optimizer, device, epoch):
     loss = utils.AverageMeter()
@@ -87,7 +89,7 @@ def main(args):
                 "learning_rate": args.lr,
                 "optimizer": args.optimizer,
                 "model": args.model,
-                "loss": "CrossEntropyLoss",
+                "loss": args.loss,
                 "batch_size": args.batch_size,
                 "epochs": args.epochs,
                 "target": args.target,
@@ -98,13 +100,14 @@ def main(args):
 
     # transform = data_utils.transform_dict[args.aug] if args.aug in data_utils.transform_dict.keys() else None
 
-    transform = data_utils.init_transform(args.aug, args.p)
+    transform = data_utils.init_transform(args.aug, args.p)  #args.p
+    transform_valid = data_utils.init_transform('norm', args.p)
 
     train_image_files = data_utils.generate_file_list(args.datadir, val_split=args.val_split, train=True, stratify=True)
     valid_image_files = data_utils.generate_file_list(args.datadir, val_split=args.val_split, train=False, stratify=True)
     
     train_dataset = data_utils.MaskDataset(train_image_files, args.target, group_age=True, transform=transform)
-    valid_dataset = data_utils.MaskDataset(valid_image_files, args.target, group_age=True, transform=None)
+    valid_dataset = data_utils.MaskDataset(valid_image_files, args.target, group_age=True, transform=transform_valid)
     
     # with WeightedRandomSampler
     num_samples = len(train_dataset)
@@ -142,13 +145,11 @@ def main(args):
     # else:
     #    raise ValueError(f"'{args.model}' not implemented!")
 
-    # model = timm.create_model('resnet34', pretrained=True, num_classes=args.n_class)
-    # model = timm.create_model('convnext_small', pretrained=True, num_classes=args.n_class)
-
     model = models.init_model(args.model, args.n_class)
     model.to(DEVICE)
 
-    criterion = torch.nn.CrossEntropyLoss()
+    # criterion = torch.nn.CrossEntropyLoss()
+    criterion = loss.init_loss(args.loss)
 
     optimizer = __import__('torch.optim', fromlist='optim').__dict__[args.optimizer](
         model.parameters(), lr=args.lr
@@ -249,7 +250,9 @@ if __name__ == "__main__":
     parser.add_argument('--valid_batch_size', type=int, default=100, help='input batch size for validing (default: 100)')
     parser.add_argument('--epochs', type=int, default=100, help='The number of epochs.')
     parser.add_argument('--lr', type=float, default=1e-3, help="Learning rate.")
-    parser.add_argument('--optimizer', type=str, default='Adam', choices=['Adam'], help='Optimizer.')
+    
+    parser.add_argument('--loss', type=str, default='CE', help='Loss Function.')
+    parser.add_argument('--optimizer', type=str, default='Adam', choices=['Adam', 'AdamW'], help='Optimizer.')
     parser.add_argument('--scheduler', action='store_true', help='Use CosineAnnealingLR scheduler.')
 
     # system
