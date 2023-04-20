@@ -14,31 +14,25 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.dataset import Subset
 from sklearn.model_selection import train_test_split
 
-def init_transform(name, p):
+def init_transform(name, p): #p
     transform_dict = {
+        'norm' : torch.nn.Sequential(transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))),
         'grayscale': torch.nn.Sequential(
                     transforms.Grayscale(num_output_channels=3),
                 ),
         'gaussian': transforms.RandomApply(nn.ModuleList([transforms.GaussianBlur((5,9), sigma=(0.1, 5))]), p=0.5),
+        'center_crop' : torch.nn.Sequential(transforms.RandomApply(nn.ModuleList([transforms.CenterCrop(size=(320,320))]),p=p),
+                                           transforms.Resize((512,384)),
+                                           transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))),
         'gray_crop': torch.nn.Sequential(transforms.RandomApply(torch.nn.ModuleList([
                                     transforms.Grayscale(num_output_channels=3),
                                     # transforms.ColorJitter(0.5),
                                     # transforms.RandomHorizontalFlip(p=1),
                                     transforms.CenterCrop(size=(320,320)),
                                     transforms.Resize((512,384)),
+                                    transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
                                     # transforms.GaussianBlur((5,9), sigma=(0.1,5)),
-                                ]), p=p)),
-
-    # 'gray_hor_crop_gau1': torch.nn.Sequential(transforms.RandomApply(torch.nn.ModuleList([
-    #                                         transforms.Grayscale(num_output_channels=3),]), p=0.5),
-	# 									# transforms.RandomApply(torch.nn.ModuleList([
-    #                                     #     transforms.ColorJitter(0.5),]), p=0.5),
-	# 									# transforms.RandomApply(torch.nn.ModuleList([
-    #                                     #     transforms.RandomHorizontalFlip(p=1),]), p=0.5),
-    #                                     transforms.RandomApply(torch.nn.ModuleList([
-    #                                         transforms.CenterCrop(size=(320,320))]), p=0.1),
-    #                                     # transforms.RandomApply(torch.nn.ModuleList([
-    #                                         # transforms.GaussianBlur((5,9), sigma=(0.1,5))]), p=0.5)),
+                                ])), p=p), #p=p
     }
     return transform_dict[name]
 
@@ -89,7 +83,8 @@ def generate_file_list(data_dir, val_split=0.2, train=True, stratify=True):
             label = 6 * label['mask'] + 3 * label['gender'] + label['age']
             labels.append(label)
 
-        x_train, x_test = train_test_split(image_files,test_size=0.2,stratify = labels)
+        x_train, x_test = train_test_split(image_files, test_size=0.2, stratify = labels)
+        
         if train:
             return x_train
         else:
@@ -134,10 +129,11 @@ class MaskDataset(Dataset):
         fpath = self.image_files[idx]
         img = Image.open(fpath)
 
+        img = transforms.ToTensor()(img)
+
         if self.transform:
             img = self.transform(img)
 
-        img = transforms.ToTensor()(img)
 
         label = {}
 

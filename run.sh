@@ -1,10 +1,11 @@
 dataname=$1
 n_class=18
-opt_list='Adam'
+opt_list='AdamW'
+loss_list='labelsmoothing' #focal f1
 lr_list='1e-3'
-aug_list='gray_crop' # random_all random_all1' #gaussian 
-bs_list='64'
-model_list='efficientnet_b0'
+aug_list='norm' # random_all random_all1' #gaussian 
+bs_list='32'
+model_list='efficientnet_b3'
 p_list='0.5'
 
 
@@ -18,23 +19,24 @@ do
             do
                 for aug in $aug_list
                 do
-                    for p in $p_list
+                
+                    for loss in $loss_list
                     do
                         # use scheduler
-                        echo "model:$model, bs: $bs, opt: $opt, lr: $lr, aug: $aug, p: $p use_sched: True"
-                        exp_name="${model}_CE_${lr}_${bs}_${aug}_scheduler_p=${p}_sampler"
+                        echo "model:$model, loss: $loss, bs: $bs, opt: $opt, lr: $lr, aug: $aug, use_sched: True" # p: $p
+                        exp_name="${model}_${loss}_${lr}_${bs}_${aug}_scheduler_sampler_stratify"
                         
                         if [ -d "$exp_name" ]
                         then
                             echo "$exp_name is exist"
                         else
-                            python train.py \
+                            python ./CV13/train.py \
                                 --model $model \
                                 --exp_name $exp_name \
                                 --n_class $n_class \
                                 --optimizer $opt \
+                                --loss $loss\
                                 --aug $aug \
-                                --p $p \
                                 --batch_size $bs \
                                 --lr $lr \
                                 --scheduler \
