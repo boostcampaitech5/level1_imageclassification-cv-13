@@ -3,7 +3,7 @@ n_class=18
 opt_list='AdamW'
 loss_list='labelsmoothing' #focal f1
 lr_list='1e-3'
-aug_list='norm' # random_all random_all1' #gaussian 
+aug_list='gray_crop' # random_all random_all1' #gaussian 
 bs_list='32'
 model_list='efficientnet_b3'
 p_list='0.5'
@@ -19,30 +19,33 @@ do
             do
                 for aug in $aug_list
                 do
-                
-                    for loss in $loss_list
+                    for p in $p_list
                     do
-                        # use scheduler
-                        echo "model:$model, loss: $loss, bs: $bs, opt: $opt, lr: $lr, aug: $aug, use_sched: True" # p: $p
-                        exp_name="${model}_${loss}_${lr}_${bs}_${aug}_scheduler_sampler_stratify"
-                        
-                        if [ -d "$exp_name" ]
-                        then
-                            echo "$exp_name is exist"
-                        else
-                            python ./CV13/train.py \
-                                --model $model \
-                                --exp_name $exp_name \
-                                --n_class $n_class \
-                                --optimizer $opt \
-                                --loss $loss\
-                                --aug $aug \
-                                --batch_size $bs \
-                                --lr $lr \
-                                --scheduler \
-                                --epochs 50 \
-                                --save_ckpt
-                        fi
+                        for loss in $loss_list
+                        do
+                            # use scheduler
+                            echo "model:$model, loss: $loss, bs: $bs, opt: $opt, lr: $lr, aug: $aug, p: $p, use_sched: True" # p: $p
+                            exp_name="${model}_${opt}_${loss}_${lr}_${bs}_${aug}_scheduler_sampler_stratify"
+                            
+                            if [ -d "$exp_name" ]
+                            then
+                                echo "$exp_name is exist"
+                            else
+                                python ../train.py \
+                                    --model $model \
+                                    --exp_name $exp_name \
+                                    --n_class $n_class \
+                                    --optimizer $opt \
+                                    --loss $loss\
+                                    --aug $aug \
+                                    --batch_size $bs \
+                                    --lr $lr \
+                                    --p $p \
+                                    --scheduler \
+                                    --epochs 50 \
+                                    --save_ckpt
+                            fi
+                        done
                     done
                     # # not use scheduler
                     # echo "loss: $loss, model:$model, bs: $bs, opt: $opt, lr: $lr, aug: $aug, use_sched: False"

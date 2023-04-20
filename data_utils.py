@@ -14,7 +14,7 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.dataset import Subset
 from sklearn.model_selection import train_test_split
 
-def init_transform(name, p): #p
+def init_transform(name, p): 
     transform_dict = {
         'norm' : torch.nn.Sequential(transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))),
         'grayscale': torch.nn.Sequential(
@@ -28,11 +28,11 @@ def init_transform(name, p): #p
                                     transforms.Grayscale(num_output_channels=3),
                                     # transforms.ColorJitter(0.5),
                                     # transforms.RandomHorizontalFlip(p=1),
-                                    transforms.CenterCrop(size=(320,320)),
+                                    transforms.CenterCrop(size=(320,320))]), p=p),
                                     transforms.Resize((512,384)),
                                     transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
                                     # transforms.GaussianBlur((5,9), sigma=(0.1,5)),
-                                ])), p=p), #p=p
+                                ), 
     }
     return transform_dict[name]
 
