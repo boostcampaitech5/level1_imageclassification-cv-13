@@ -10,7 +10,7 @@
 ## 프로젝트 구성원 및 역할
 | 강정우 | 김윤지 | 송인성 | 정성혜 | 최홍록 |
 | :--: | :------: | :------:| :--------:| :---:|
-| Modeling <br> Augmentation <br> Ensemble | Modeling <br> Augmentation <br> Loss <br> Stratify | Modeling <br> Augmentation <br> Loss | EDA <br> Modeling <br> Augmentation <br> Loss <br> Sampler | Modeling <br> Augmentation <br> Loss <br>  Hyperparameter |
+| Modeling <br> Augmentation <br> Ensemble | Modeling <br> Augmentation <br> Loss <br> Stratify | EDA <br> Modeling <br> Augmentation <br> Loss | EDA <br> Modeling <br> Augmentation <br> Loss <br> Sampler | Modeling <br> Augmentation <br> Loss <br>  Hyperparameter |
 | #해피바이러스 | #꼼꼼박사 | #기록무새 | #구현박사 | #튜닝장인 |
 
 
