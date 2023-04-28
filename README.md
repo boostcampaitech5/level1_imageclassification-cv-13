@@ -25,8 +25,8 @@ level1_imageclassification-cv-13
 ├── sample_submission.ipynb
 ├── train.py
 ├── utils.py
-└── wrap-up_report.pdf
+└── wrapup_report_CV13.pdf
 ```
 
 ## Wrap-Up Report
-실험 내용과 결과를 바탕으로 [Report](https://github.com/boostcampaitech5/level1_imageclassification-cv-13/blob/main/wrap-up_report.pdf) 를 작성하였습니다.
+실험 내용과 결과를 바탕으로 [Report](https://github.com/boostcampaitech5/level1_imageclassification-cv-13/blob/main/wrapup_report_CV13.pdf) 를 작성하였습니다.
