@@ -30,3 +30,4 @@ level1_imageclassification-cv-13
 
 ## Wrap-Up Report
 실험 내용과 결과를 바탕으로 [Report](https://github.com/boostcampaitech5/level1_imageclassification-cv-13/blob/main/wrapup_report_CV13.pdf) 를 작성하였습니다.
+자세한 실험 내용은 [Notion](https://yoonjii.notion.site/CV13-Wrap-Up-124c7fc6099048488abb360fd819489c) 에서 확인해보실 수 있습니다.
